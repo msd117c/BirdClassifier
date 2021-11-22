@@ -1,3 +1,11 @@
 <resources>
     <string name="app_name">Bird Classifier</string>
+
+    <string name="permission_needed">Permission needed</string>
+    <string name="retry">Retry</string>
+    <string name="exit">Exit</string>
+    <string name="detection_mode_label">Detection mode</string>
+
+    <string name="birds_detection">Birds</string>
+    <string name="plants_detection">Plants</string>
 </resources>

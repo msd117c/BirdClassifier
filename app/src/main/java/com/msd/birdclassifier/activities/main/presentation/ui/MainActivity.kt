@@ -46,7 +46,10 @@ class MainActivity : ComponentActivity() {
     private fun setContentView(state: MainViewState) {
         setContent {
             BirdClassifierTheme {
-                MainActivityView(state = state)
+                MainActivityView(
+                    state = state,
+                    onDetectionModeListener = viewModel::onDetectionModeChanged
+                )
             }
         }
     }

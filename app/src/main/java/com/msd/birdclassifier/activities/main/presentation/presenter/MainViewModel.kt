@@ -9,6 +9,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.filterNotNull
 import javax.inject.Inject
 
+private const val BIRDS_DETECTOR_FILE = "lite-model_aiy_vision_classifier_birds_V1_3.tflite"
+private const val PLANTS_DETECTOR_FILE = "lite-model_aiy_vision_classifier_plants_V1_3.tflite"
+
 @HiltViewModel
 class MainViewModel @Inject constructor(
     private val getImageAnalysisWithResultUseCase: GetImageAnalysisWithResultUseCase
@@ -23,9 +26,26 @@ class MainViewModel @Inject constructor(
 
     fun onPermissionResult(isGranted: Boolean) {
         state.value = if (isGranted) {
-            AnalyzeCameraInput(getImageAnalysisWithResultUseCase("lite-model_aiy_vision_classifier_birds_V1_3.tflite"))
+            AnalyzeCameraInput(
+                imageAnalysisWithResult = getImageAnalysisWithResultUseCase(BIRDS_DETECTOR_FILE),
+                currentDetectionOption = AnalyzeCameraInput.DetectionOptions.BIRDS
+            )
         } else {
             PermissionDeclined(::onRetryClicked, ::onExitClicked)
+        }
+    }
+
+    fun onDetectionModeChanged(detectionMode: AnalyzeCameraInput.DetectionOptions) {
+        if (state.value is AnalyzeCameraInput) {
+            val detectorFile = when (detectionMode) {
+                AnalyzeCameraInput.DetectionOptions.BIRDS -> BIRDS_DETECTOR_FILE
+                AnalyzeCameraInput.DetectionOptions.PLANTS -> PLANTS_DETECTOR_FILE
+            }
+
+            state.value = (state.value as? AnalyzeCameraInput)?.copy(
+                imageAnalysisWithResult = getImageAnalysisWithResultUseCase(detectorFile),
+                currentDetectionOption = detectionMode
+            )
         }
     }
 

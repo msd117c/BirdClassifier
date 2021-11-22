@@ -1,9 +1,11 @@
 package com.msd.birdclassifier.activities.main.presentation.ui
 
 import android.graphics.Rect
+import androidx.annotation.StringRes
 import androidx.camera.core.ImageAnalysis
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
+import com.msd.birdclassifier.R
 
 sealed class MainViewState
 
@@ -14,7 +16,8 @@ data class PermissionDeclined(
 ) : MainViewState()
 
 data class AnalyzeCameraInput(
-    val imageAnalysisWithResult: ImageAnalysisWithResult
+    val imageAnalysisWithResult: ImageAnalysisWithResult,
+    val currentDetectionOption: DetectionOptions
 ) : MainViewState() {
 
     data class ImageAnalysisWithResult(
@@ -28,6 +31,11 @@ data class AnalyzeCameraInput(
         val imageWidth: Float,
         val imageHeight: Float
     )
+
+    enum class DetectionOptions(@StringRes val label: Int) {
+        BIRDS(R.string.birds_detection),
+        PLANTS(R.string.plants_detection)
+    }
 }
 
 object ExitApp : MainViewState()

@@ -5,21 +5,20 @@ import android.content.res.Configuration
 import android.graphics.Paint
 import android.graphics.Rect
 import android.view.ScaleGestureDetector
-import androidx.camera.camera2.Camera2Config
 import androidx.camera.core.CameraSelector
-import androidx.camera.core.CameraX
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material.Button
-import androidx.compose.material.Surface
-import androidx.compose.material.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusable
+import androidx.compose.foundation.layout.*
+import androidx.compose.material.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.ArrowDropUp
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -27,19 +26,27 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.toSize
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
+import com.msd.birdclassifier.R
 import com.msd.birdclassifier.ui.theme.BirdClassifierTheme
 import kotlin.math.max
 import kotlin.math.min
 
 @Composable
-fun MainActivityView(state: MainViewState) {
+fun MainActivityView(
+    state: MainViewState,
+    onDetectionModeListener: (AnalyzeCameraInput.DetectionOptions) -> Unit
+) {
     when (state) {
         is PermissionDeclined -> PermissionDeclinedView(state)
-        is AnalyzeCameraInput -> CameraPreview(state)
+        is AnalyzeCameraInput -> CameraPreview(state, onDetectionModeListener)
         is RequestingPermission -> Surface(
             modifier = Modifier.fillMaxSize(),
             color = Color.White
@@ -51,19 +58,22 @@ fun MainActivityView(state: MainViewState) {
 @Composable
 fun PermissionDeclinedView(state: PermissionDeclined) {
     Column(modifier = Modifier.fillMaxSize()) {
-        Text(text = "Permissions needed")
+        Text(text = LocalContext.current.getString(R.string.permission_needed))
         Button(onClick = { state.onRetryClicked() }) {
-            Text(text = "Retry")
+            Text(text = LocalContext.current.getString(R.string.retry))
         }
         Button(onClick = { state.onExitClicked() }) {
-            Text(text = "Exit")
+            Text(text = LocalContext.current.getString(R.string.exit))
         }
     }
 }
 
-@SuppressLint("UnsafeOptInUsageError")
+@SuppressLint("UnsafeOptInUsageError", "ClickableViewAccessibility")
 @Composable
-fun CameraPreview(state: AnalyzeCameraInput) {
+fun CameraPreview(
+    state: AnalyzeCameraInput,
+    onDetectionModeListener: (AnalyzeCameraInput.DetectionOptions) -> Unit
+) {
     val lifecycleOwner = LocalLifecycleOwner.current
     val context = LocalContext.current
     val cameraProviderFuture = remember { ProcessCameraProvider.getInstance(context) }
@@ -95,7 +105,9 @@ fun CameraPreview(state: AnalyzeCameraInput) {
 
                 val listener = object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
                     override fun onScale(detector: ScaleGestureDetector): Boolean {
-                        val scale: Float = (cameraInfo.zoomState.value?.zoomRatio ?: 0f).times(detector.scaleFactor)
+                        val scale: Float = (cameraInfo.zoomState.value?.zoomRatio ?: 0f).times(
+                            detector.scaleFactor
+                        )
                         cameraControl.setZoomRatio(scale)
                         return true
                     }
@@ -112,8 +124,65 @@ fun CameraPreview(state: AnalyzeCameraInput) {
         },
         modifier = Modifier.fillMaxSize(),
     )
+    DropDownList(
+        list = AnalyzeCameraInput.DetectionOptions.values().toList(),
+        selectedMode = state.currentDetectionOption,
+        onDetectionModeListener = onDetectionModeListener
+    )
     state.imageAnalysisWithResult.objectDetectionBoxState.value?.let { objectDetectionBox ->
         DrawFocusRect(objectDetectionBox = objectDetectionBox)
+    }
+}
+
+@Composable
+fun DropDownList(
+    list: List<AnalyzeCameraInput.DetectionOptions>,
+    selectedMode: AnalyzeCameraInput.DetectionOptions,
+    onDetectionModeListener: (AnalyzeCameraInput.DetectionOptions) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+    var textFieldSize by remember { mutableStateOf(Size.Zero) }
+
+    val icon = if (expanded) Icons.Filled.ArrowDropDown else Icons.Filled.ArrowDropUp
+
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        Column(modifier = Modifier.align(Alignment.BottomCenter)) {
+            DropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false },
+                modifier = Modifier.width(with(LocalDensity.current) { textFieldSize.width.toDp() })
+            ) {
+                list.forEach { detectionOption ->
+                    DropdownMenuItem(
+                        modifier = Modifier.padding(8.dp, 0.dp),
+                        onClick = {
+                            onDetectionModeListener(detectionOption)
+                            expanded = false
+                        }
+                    ) { Text(text = LocalContext.current.getString(detectionOption.label)) }
+                }
+            }
+            OutlinedTextField(
+                value = LocalContext.current.getString(selectedMode.label),
+                onValueChange = {},
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .focusable(enabled = false)
+                    .clickable(enabled = false) { }
+                    .padding(8.dp, 8.dp)
+                    .onGloballyPositioned { coordinates ->
+                        textFieldSize = coordinates.size.toSize()
+                    },
+                label = { Text(text = LocalContext.current.getString(R.string.detection_mode_label)) },
+                trailingIcon = {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = "contentDescription",
+                        modifier = Modifier.clickable { expanded = !expanded }
+                    )
+                }
+            )
+        }
     }
 }
 

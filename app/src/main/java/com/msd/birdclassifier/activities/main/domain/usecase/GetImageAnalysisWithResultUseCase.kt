@@ -3,6 +3,8 @@ package com.msd.birdclassifier.activities.main.domain.usecase
 import android.annotation.SuppressLint
 import android.content.Context
 import androidx.camera.core.ImageAnalysis
+import androidx.camera.core.ImageProxy
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.core.content.ContextCompat
 import com.google.mlkit.vision.common.InputImage
@@ -30,43 +32,34 @@ class GetImageAnalysisWithResultUseCase @Inject constructor(
 
         imageAnalysis.setAnalyzer(executor, { image ->
             val rotationDegrees = image.imageInfo.rotationDegrees
-            // insert your code here.
-            if (image.image != null) {
-                val inputImage = InputImage.fromMediaImage(image.image, rotationDegrees)
-                objectDetector
-                    .process(inputImage)
-                    .addOnFailureListener {
-                        result.value = null
-                        image.close()
-                    }
+            image.image?.let {
+                objectDetector.process(InputImage.fromMediaImage(it, rotationDegrees))
+                    .addOnFailureListener { onError(result, image) }
                     .addOnSuccessListener { results ->
                         if (results.isEmpty()) result.value = null
+
                         for (detectedObject in results) {
-                            detectedObject.labels.sortByDescending { it.confidence }
+                            detectedObject.labels.sortByDescending { label -> label.confidence }
                             val boundingBox = detectedObject.boundingBox
                             if (detectedObject.labels.isNotEmpty() && detectedObject.labels[0].text != NO_LABEL) {
                                 result.value = AnalyzeCameraInput.ObjectDetectionBox(
                                     boundingBox,
-                                    detectedObject.labels[0].text.takeIf { it != NO_LABEL },
+                                    detectedObject.labels[0].text.takeIf { text -> text != NO_LABEL },
                                     image.width.toFloat(),
                                     image.height.toFloat()
                                 )
                             }
                         }
-                    }
-                    .addOnCompleteListener {
-                        image.close()
-                    }
-                    .addOnCanceledListener {
-                        result.value = null
-                        image.close()
-                    }
-            } else {
-                result.value = null
-                image.close()
-            }
+                    }.addOnCompleteListener { image.close() }
+                    .addOnCanceledListener { onError(result, image) }
+            } ?: onError(result, image)
         })
 
         return AnalyzeCameraInput.ImageAnalysisWithResult(imageAnalysis, result)
+    }
+
+    private fun onError(result: MutableState<AnalyzeCameraInput.ObjectDetectionBox?>, image: ImageProxy) {
+        result.value = null
+        image.close()
     }
 }
