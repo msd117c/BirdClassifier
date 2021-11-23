@@ -10,8 +10,8 @@ import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
@@ -26,15 +26,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.nativeCanvas
-import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.toSize
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
-import com.msd.birdclassifier.R
 import com.msd.birdclassifier.activities.main.presentation.ui.AnalyzeCameraInput
 import com.msd.birdclassifier.ui.theme.BirdClassifierTheme
 import kotlin.math.max
@@ -113,20 +109,21 @@ fun DropDownList(
     onDetectionModeListener: (AnalyzeCameraInput.DetectionOptions) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
-    var textFieldSize by remember { mutableStateOf(Size.Zero) }
-
     val icon = if (expanded) Icons.Filled.ArrowDropDown else Icons.Filled.ArrowDropUp
 
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-        Column(modifier = Modifier.align(Alignment.BottomCenter)) {
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(0.dp, 0.dp, 0.dp, 48.dp)
+        ) {
             DropdownMenu(
                 expanded = expanded,
                 onDismissRequest = { expanded = false },
-                modifier = Modifier.width(with(LocalDensity.current) { textFieldSize.width.toDp() })
+                modifier = Modifier.fillMaxWidth()
             ) {
                 list.forEach { detectionOption ->
                     DropdownMenuItem(
-                        modifier = Modifier.padding(8.dp, 0.dp),
                         onClick = {
                             onDetectionModeListener(detectionOption)
                             expanded = false
@@ -134,26 +131,27 @@ fun DropDownList(
                     ) { Text(text = LocalContext.current.getString(detectionOption.label)) }
                 }
             }
-            OutlinedTextField(
-                value = LocalContext.current.getString(selectedMode.label),
-                onValueChange = {},
+            BoxWithConstraints(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .focusable(enabled = false)
-                    .clickable(enabled = false) { }
-                    .padding(8.dp, 8.dp)
-                    .onGloballyPositioned { coordinates ->
-                        textFieldSize = coordinates.size.toSize()
-                    },
-                label = { Text(text = LocalContext.current.getString(R.string.detection_mode_label)) },
-                trailingIcon = {
-                    Icon(
-                        imageVector = icon,
-                        contentDescription = "contentDescription",
-                        modifier = Modifier.clickable { expanded = !expanded }
-                    )
-                }
-            )
+                    .padding(10.dp)
+                    .border(1.dp, MaterialTheme.colors.onSurface.copy(alpha = 0.5f))
+                    .clickable(onClick = { expanded = !expanded })
+            ) {
+                Text(
+                    text = LocalContext.current.getString(selectedMode.label),
+                    modifier = Modifier
+                        .padding(10.dp)
+                )
+
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    modifier = Modifier
+                        .align(Alignment.CenterEnd)
+                        .padding(0.dp, 0.dp, 10.dp, 0.dp)
+                )
+            }
         }
     }
 }
@@ -225,7 +223,7 @@ fun DrawFocusRect(objectDetectionBox: AnalyzeCameraInput.ObjectDetectionBox) {
 
 @androidx.compose.ui.tooling.preview.Preview
 @Composable
-fun DefaultPreview() {
+fun CameraViewPreview() {
     BirdClassifierTheme {
         CameraPreview(
             state = AnalyzeCameraInput(null, AnalyzeCameraInput.DetectionOptions.BIRDS),
