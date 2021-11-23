@@ -8,6 +8,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.lifecycle.lifecycleScope
 import com.msd.birdclassifier.activities.main.presentation.presenter.MainViewModel
+import com.msd.birdclassifier.activities.main.presentation.ui.view.MainActivityView
 import com.msd.birdclassifier.ui.theme.BirdClassifierTheme
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collect
@@ -18,12 +19,10 @@ class MainActivity : ComponentActivity() {
 
     private val viewModel: MainViewModel by viewModels()
 
-    private val activityResultLauncher by lazy {
-        registerForActivityResult(
-            ActivityResultContracts.RequestPermission(),
-            viewModel::onPermissionResult
-        )
-    }
+    private val activityResultLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission(),
+        viewModel::onPermissionResult
+    )
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

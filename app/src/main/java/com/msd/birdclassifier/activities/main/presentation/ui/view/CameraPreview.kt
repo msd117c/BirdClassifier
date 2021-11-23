@@ -1,4 +1,4 @@
-package com.msd.birdclassifier.activities.main.presentation.ui
+package com.msd.birdclassifier.activities.main.presentation.ui.view
 
 import android.annotation.SuppressLint
 import android.content.res.Configuration
@@ -35,38 +35,10 @@ import androidx.compose.ui.unit.toSize
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import com.msd.birdclassifier.R
+import com.msd.birdclassifier.activities.main.presentation.ui.AnalyzeCameraInput
 import com.msd.birdclassifier.ui.theme.BirdClassifierTheme
 import kotlin.math.max
 import kotlin.math.min
-
-@Composable
-fun MainActivityView(
-    state: MainViewState,
-    onDetectionModeListener: (AnalyzeCameraInput.DetectionOptions) -> Unit
-) {
-    when (state) {
-        is PermissionDeclined -> PermissionDeclinedView(state)
-        is AnalyzeCameraInput -> CameraPreview(state, onDetectionModeListener)
-        is RequestingPermission -> Surface(
-            modifier = Modifier.fillMaxSize(),
-            color = Color.White
-        ) {}
-        is ExitApp -> (LocalContext.current as MainActivity).finishAffinity()
-    }
-}
-
-@Composable
-fun PermissionDeclinedView(state: PermissionDeclined) {
-    Column(modifier = Modifier.fillMaxSize()) {
-        Text(text = LocalContext.current.getString(R.string.permission_needed))
-        Button(onClick = { state.onRetryClicked() }) {
-            Text(text = LocalContext.current.getString(R.string.retry))
-        }
-        Button(onClick = { state.onExitClicked() }) {
-            Text(text = LocalContext.current.getString(R.string.exit))
-        }
-    }
-}
 
 @SuppressLint("UnsafeOptInUsageError", "ClickableViewAccessibility")
 @Composable
@@ -96,7 +68,7 @@ fun CameraPreview(
                 val cameraX = cameraProvider.bindToLifecycle(
                     lifecycleOwner,
                     cameraSelector,
-                    state.imageAnalysisWithResult.imageAnalysis,
+                    state.imageAnalysisWithResult?.imageAnalysis,
                     preview
                 )
 
@@ -129,7 +101,7 @@ fun CameraPreview(
         selectedMode = state.currentDetectionOption,
         onDetectionModeListener = onDetectionModeListener
     )
-    state.imageAnalysisWithResult.objectDetectionBoxState.value?.let { objectDetectionBox ->
+    state.imageAnalysisWithResult?.objectDetectionBoxState?.value?.let { objectDetectionBox ->
         DrawFocusRect(objectDetectionBox = objectDetectionBox)
     }
 }
@@ -255,13 +227,9 @@ fun DrawFocusRect(objectDetectionBox: AnalyzeCameraInput.ObjectDetectionBox) {
 @Composable
 fun DefaultPreview() {
     BirdClassifierTheme {
-        DrawFocusRect(
-            AnalyzeCameraInput.ObjectDetectionBox(
-                Rect(229, 181, 403, 299),
-                "Hello",
-                480f,
-                640f
-            )
+        CameraPreview(
+            state = AnalyzeCameraInput(null, AnalyzeCameraInput.DetectionOptions.BIRDS),
+            onDetectionModeListener = {}
         )
     }
 }

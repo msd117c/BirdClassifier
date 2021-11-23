@@ -7,6 +7,9 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import com.msd.birdclassifier.R
 
+private const val BIRDS_DETECTOR_FILE = "lite-model_aiy_vision_classifier_birds_V1_3.tflite"
+private const val PLANTS_DETECTOR_FILE = "lite-model_aiy_vision_classifier_plants_V1_3.tflite"
+
 sealed class MainViewState
 
 object RequestingPermission : MainViewState()
@@ -16,7 +19,7 @@ data class PermissionDeclined(
 ) : MainViewState()
 
 data class AnalyzeCameraInput(
-    val imageAnalysisWithResult: ImageAnalysisWithResult,
+    val imageAnalysisWithResult: ImageAnalysisWithResult?,
     val currentDetectionOption: DetectionOptions
 ) : MainViewState() {
 
@@ -32,9 +35,9 @@ data class AnalyzeCameraInput(
         val imageHeight: Float
     )
 
-    enum class DetectionOptions(@StringRes val label: Int) {
-        BIRDS(R.string.birds_detection),
-        PLANTS(R.string.plants_detection)
+    enum class DetectionOptions(@StringRes val label: Int, val fileName: String) {
+        BIRDS(R.string.birds_detection, BIRDS_DETECTOR_FILE),
+        PLANTS(R.string.plants_detection, PLANTS_DETECTOR_FILE)
     }
 }
 
